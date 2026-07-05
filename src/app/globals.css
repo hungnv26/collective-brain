@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #18181b;
+  --muted: #71717a;
+  --border: #e4e4e7;
+  --panel: #fafafa;
+
+  /* Node-type colour tokens (plan §2d design system) */
+  --type-fact: #2563eb;
+  --type-decision: #d97706;
+  --type-sop: #16a34a;
+  --type-person: #9333ea;
+  --type-client: #0d9488;
+  --type-project: #db2777;
+  --type-meeting: #6b7280;
+  --type-idea: #ca8a04;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-panel: var(--panel);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #09090b;
+    --foreground: #ededed;
+    --muted: #a1a1aa;
+    --border: #27272a;
+    --panel: #111113;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}

@@ -1,0 +1,28 @@
+# Supabase local/project config. AU data residency is a selling point for the
+# professional-services beachhead — pick the Sydney region when creating the
+# hosted project (ap-southeast-2).
+project_id = "collective-brain"
+
+[api]
+enabled = true
+port = 54321
+# Only `public` is exposed to PostgREST. The `app` schema (permission helpers)
+# stays private; the four RPC entry points live in `public`.
+schemas = ["public"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
