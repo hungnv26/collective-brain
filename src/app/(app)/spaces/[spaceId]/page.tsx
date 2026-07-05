@@ -20,12 +20,20 @@ export default async function SpacePage({ params }: { params: Promise<{ spaceId:
           <p className="text-xs uppercase tracking-wide text-muted">{KIND_LABEL[space.kind]} space</p>
           <h1 className="text-2xl font-semibold tracking-tight">{space.name}</h1>
         </div>
-        <Link
-          href={`/spaces/${space.id}/new`}
-          className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900"
-        >
-          + New node
-        </Link>
+        <div className="flex items-center gap-2">
+          <a
+            href={`/api/export?space=${space.id}`}
+            className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-panel"
+          >
+            Export
+          </a>
+          <Link
+            href={`/spaces/${space.id}/new`}
+            className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900"
+          >
+            + New node
+          </Link>
+        </div>
       </div>
 
       <div className="mt-6 space-y-2">
