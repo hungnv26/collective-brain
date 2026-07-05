@@ -68,7 +68,21 @@ a setup hint, and API routes return 503.
 
 ---
 
-## Next: Sprint 2 — Nodes
+## Sprint 2 — Nodes ✅
 
-Node CRUD, the markdown editor with `[[wikilink]]` autocomplete, backlinks,
-versions, text search, and the node view + right panel.
+- **Node RPCs** (`supabase/migrations/0004_nodes.sql`) — `create_node`,
+  `update_node` (snapshots a version each save), `search_nodes` (Postgres
+  full-text over a generated `tsvector`), and `app.resolve_wikilinks`
+  (rebuilds `related` links from `[[wikilinks]]`). All SECURITY INVOKER, so
+  RLS still governs every read/write.
+- **App** — space node lists, node view (rendered markdown, type chip,
+  status, backlinks + version history panel), the markdown editor with `[[`
+  autocomplete and live preview, and full-text search grouped by type.
+- **Exit gate** ("usable as a plain team wiki") proven by `src/test/nodes.test.ts`
+  and `src/test/wikilinks.test.ts` (create/version/wikilink/backlink/search +
+  RLS still enforced). **26 tests pass; clean typecheck and build.**
+
+## Next: Sprint 3 — Ingest
+
+Upload + text extraction, the Claude distillation prompt + eval set, dedupe,
+the review queue UI, and embeddings on accept.

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { groupSpaces } from "@/lib/perm/spaces";
 import type { Space } from "@/lib/types";
 
@@ -20,10 +21,13 @@ export function SpaceTree({ spaces }: { spaces: Space[] }) {
             <ul>
               {tree[key].map((s) => (
                 <li key={s.id}>
-                  <span className="flex cursor-default items-center gap-2 rounded-md px-2 py-1 hover:bg-panel">
+                  <Link
+                    href={`/spaces/${s.id}`}
+                    className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-panel"
+                  >
                     <span className="text-muted">{key === "private" ? "◆" : key === "team" ? "▲" : "●"}</span>
                     <span className="truncate">{s.name}</span>
-                  </span>
+                  </Link>
                 </li>
               ))}
             </ul>

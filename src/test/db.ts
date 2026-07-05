@@ -39,6 +39,11 @@ const AUTH_SHIM = `
     if not exists (select 1 from pg_roles where rolname = 'service_role') then
       create role service_role bypassrls; end if;
   end $$;
+
+  -- Supabase grants these to the API roles out of the box; SECURITY INVOKER
+  -- RPCs (e.g. create_node) call auth.uid() as the authenticated role.
+  grant usage on schema auth to anon, authenticated, service_role;
+  grant execute on function auth.uid() to anon, authenticated, service_role;
 `;
 
 export type Db = PGlite;

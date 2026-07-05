@@ -1,10 +1,11 @@
+import Link from "next/link";
 import type { MembershipRole, Org, Space } from "@/lib/types";
 import { OrgSwitcher } from "./OrgSwitcher";
 import { SpaceTree } from "./SpaceTree";
 
-const NAV = [
+const NAV: { label: string; icon: string; href?: string }[] = [
   { label: "Ask", icon: "✦" },
-  { label: "Dashboard", icon: "▦" },
+  { label: "Dashboard", icon: "▦", href: "/" },
   { label: "Review Queue", icon: "☑" },
   { label: "Graph", icon: "❖" },
   { label: "Ingest", icon: "⤓" },
@@ -30,14 +31,29 @@ export function Sidebar({
 
       <div className="border-b border-border px-2 py-3">
         <ul className="space-y-0.5 text-sm">
-          {NAV.map((item) => (
-            <li key={item.label}>
-              <span className="flex cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-muted hover:bg-panel hover:text-foreground">
-                <span className="w-4 text-center">{item.icon}</span>
-                {item.label}
-              </span>
-            </li>
-          ))}
+          {NAV.map((item) =>
+            item.href ? (
+              <li key={item.label}>
+                <Link
+                  href={item.href}
+                  className="flex items-center gap-2 rounded-md px-2 py-1.5 text-foreground hover:bg-panel"
+                >
+                  <span className="w-4 text-center">{item.icon}</span>
+                  {item.label}
+                </Link>
+              </li>
+            ) : (
+              <li key={item.label}>
+                <span
+                  title="Coming in a later sprint"
+                  className="flex cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-muted/60"
+                >
+                  <span className="w-4 text-center">{item.icon}</span>
+                  {item.label}
+                </span>
+              </li>
+            ),
+          )}
         </ul>
       </div>
 

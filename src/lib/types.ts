@@ -25,3 +25,40 @@ export interface Space {
   team_id: string | null;
   name: string;
 }
+
+export const NODE_TYPES = [
+  "fact",
+  "decision",
+  "sop",
+  "person",
+  "client",
+  "project",
+  "meeting",
+  "idea",
+] as const;
+export type NodeType = (typeof NODE_TYPES)[number];
+
+export interface Node {
+  id: string;
+  org_id: string;
+  space_id: string;
+  type: string;
+  title: string;
+  slug: string;
+  body_md: string;
+  frontmatter: Record<string, unknown>;
+  confidence: string | null;
+  status: NodeStatus;
+  created_by: string | null;
+  source_ref: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NodeVersion {
+  id: string;
+  node_id: string;
+  body_md: string;
+  edited_by: string | null;
+  created_at: string;
+}
