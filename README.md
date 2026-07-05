@@ -82,7 +82,36 @@ a setup hint, and API routes return 503.
   and `src/test/wikilinks.test.ts` (create/version/wikilink/backlink/search +
   RLS still enforced). **26 tests pass; clean typecheck and build.**
 
-## Next: Sprint 3 — Ingest
+## Sprint 3 — Ingest ✅
 
-Upload + text extraction, the Claude distillation prompt + eval set, dedupe,
-the review queue UI, and embeddings on accept.
+- **DB** (`0005_ingest.sql`) — pgvector, `ingest_jobs`, `review_items`,
+  `embeddings`; `accept_review_item` RPC turns a reviewed proposal into a real
+  node (reusing `create_node`).
+- **Pipeline** — extract (paste/file/URL) → Claude distills atomic typed nodes
+  (forced tool-use, `CB_DISTILL_MODEL`, default `claude-opus-4-8`) → embed +
+  dedupe → review queue; embeddings written on accept.
+- **UI** — `/ingest` and the review queue (accept / edit-then-accept / reject /
+  bulk high-confidence, duplicate warnings).
+
+## Sprint 4 — Ask ✅ (MVP complete)
+
+- **DB** (`0006_ask.sql`) — `conversations`, `messages` (with citations),
+  `questions_log`; `match_nodes` vector-retrieval RPC.
+- **Retrieval** (`lib/retrieval`) — hybrid: pgvector + keyword FTS fused with
+  reciprocal-rank fusion, then one-hop link expansion. RLS applies before any
+  content reaches the model.
+- **Ask** — `POST /api/ask` streams a Claude answer as SSE, grounded only in the
+  retrieved sources and cited inline with `[n]`; unanswerable questions are
+  logged as knowledge gaps.
+- **UI** — `/ask`: chat thread, conversation sidebar, inline citation chips that
+  open the source node in a side panel, thumbs feedback.
+
+The MVP scope from the plan (auth/orgs, nodes, ingest, cited Ask, permissions,
+export*) is complete. *(Export is the remaining MVP item — a per-space
+Obsidian-vault zip.)*
+
+## Next (V1)
+
+Connectors (Drive/Gmail/Slack/transcripts), maintenance agents + weekly digest,
+per-org MCP server, vertical templates, and a swap of the feature-hash embedder
+for a neural embedding model (retrieval quality).

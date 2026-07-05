@@ -86,6 +86,15 @@ export const bulkAcceptSchema = z.object({
   minConfidence: z.enum(["low", "medium", "high"]).default("high"),
 });
 
+export const askSchema = z.object({
+  conversationId: z.string().uuid().optional(),
+  question: z.string().trim().min(1, "Ask something").max(2000),
+});
+
+export const feedbackSchema = z.object({
+  feedback: z.enum(["up", "down"]).nullable(),
+});
+
 /** Turn a display name into a URL-safe slug candidate. */
 export function slugify(name: string): string {
   return name

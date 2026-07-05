@@ -1,9 +1,26 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseUnavailable } from "@/lib/supabase/guard";
+import { storeNodeEmbedding } from "@/lib/ai/embed-node";
 import { updateNodeSchema } from "@/lib/validation/schemas";
+import type { Node } from "@/lib/types";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+/** GET /api/nodes/:id — a single node (used by the Ask citation panel). */
+export async function GET(_request: Request, { params }: Ctx) {
+  const unavailable = supabaseUnavailable();
+  if (unavailable) return unavailable;
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("nodes")
+    .select("id, title, type, body_md, space_id, status")
+    .eq("id", id)
+    .maybeSingle();
+  if (!data) return NextResponse.json({ error: "not found" }, { status: 404 });
+  return NextResponse.json({ node: data });
+}
 
 /** PATCH /api/nodes/:id — update (RPC snapshots a version + re-resolves links). */
 export async function PATCH(request: Request, { params }: Ctx) {
@@ -28,6 +45,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
     const forbidden = /row-level security|not permitted|not found/.test(error.message);
     return NextResponse.json({ error: error.message }, { status: forbidden ? 403 : 400 });
   }
+  await storeNodeEmbedding(supabase, data as Node); // refresh the embedding on edit
   return NextResponse.json({ node: data });
 }
 

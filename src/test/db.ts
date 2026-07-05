@@ -69,6 +69,8 @@ export async function freshDb(): Promise<Db> {
  */
 function pgliteCompat(sql: string): string {
   return sql
+    // Drop whole pgvector-only blocks (e.g. the match_nodes RPC using `<=>`).
+    .replace(/-- @pglite-skip-begin[\s\S]*?-- @pglite-skip-end/gi, "-- pglite-skipped block")
     .replace(/create extension if not exists vector;/gi, "-- vector extension shimmed for pglite")
     .replace(/\bvector\(384\)/gi, "real[]")
     .replace(/create index \w+ on embeddings using hnsw[^;]*;/gi, "-- hnsw index skipped for pglite");

@@ -4,7 +4,7 @@ import { OrgSwitcher } from "./OrgSwitcher";
 import { SpaceTree } from "./SpaceTree";
 
 const NAV: { label: string; icon: string; href?: string }[] = [
-  { label: "Ask", icon: "✦" },
+  { label: "Ask", icon: "✦", href: "/ask" },
   { label: "Dashboard", icon: "▦", href: "/" },
   { label: "Review Queue", icon: "☑" },
   { label: "Graph", icon: "❖" },

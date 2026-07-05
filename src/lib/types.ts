@@ -99,3 +99,23 @@ export interface ReviewItem {
   status: "pending" | "accepted" | "edited" | "rejected";
   created_node: string | null;
 }
+
+export interface Citation {
+  n: number;
+  node_id: string;
+  title: string;
+}
+
+export interface Conversation {
+  id: string;
+  title: string;
+  updated_at: string;
+}
+
+export interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  citations: Citation[];
+  feedback: "up" | "down" | null;
+}

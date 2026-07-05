@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseUnavailable } from "@/lib/supabase/guard";
+import { storeNodeEmbedding } from "@/lib/ai/embed-node";
 import { createNodeSchema } from "@/lib/validation/schemas";
+import type { Node } from "@/lib/types";
 
 /** GET /api/nodes?q=&orgId= — title search for the editor's [[ autocomplete. */
 export async function GET(request: Request) {
@@ -49,5 +51,6 @@ export async function POST(request: Request) {
     const forbidden = /row-level security|not permitted/.test(error.message);
     return NextResponse.json({ error: error.message }, { status: forbidden ? 403 : 400 });
   }
+  await storeNodeEmbedding(supabase, data as Node); // keep the node retrievable by Ask
   return NextResponse.json({ node: data }, { status: 201 });
 }
