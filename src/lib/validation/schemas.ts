@@ -55,6 +55,37 @@ export const updateNodeSchema = z.object({
 });
 export type UpdateNodeInput = z.infer<typeof updateNodeSchema>;
 
+export const sourceKind = z.enum(["paste", "file", "url"]);
+
+export const ingestJobSchema = z
+  .object({
+    spaceId: z.string().uuid(),
+    sourceKind,
+    text: z.string().optional(),
+    url: z.string().url().optional(),
+    filename: z.string().max(200).optional(),
+  })
+  .refine((v) => (v.sourceKind === "url" ? !!v.url : !!v.text?.trim()), {
+    message: "Provide text (paste/file) or a URL",
+  });
+export type IngestJobInput = z.infer<typeof ingestJobSchema>;
+
+export const acceptItemSchema = z.object({
+  overrides: z
+    .object({
+      title: z.string().trim().min(1).max(200).optional(),
+      type: nodeType.optional(),
+      body_md: z.string().optional(),
+      confidence: z.string().max(20).optional(),
+    })
+    .optional(),
+});
+
+export const bulkAcceptSchema = z.object({
+  jobId: z.string().uuid(),
+  minConfidence: z.enum(["low", "medium", "high"]).default("high"),
+});
+
 /** Turn a display name into a URL-safe slug candidate. */
 export function slugify(name: string): string {
   return name

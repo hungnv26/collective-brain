@@ -56,9 +56,22 @@ export async function freshDb(): Promise<Db> {
     .filter((f) => f.endsWith(".sql"))
     .sort();
   for (const f of files) {
-    await db.exec(readFileSync(join(MIGRATIONS_DIR, f), "utf8"));
+    await db.exec(pgliteCompat(readFileSync(join(MIGRATIONS_DIR, f), "utf8")));
   }
   return db;
+}
+
+/**
+ * PGlite 0.5.x doesn't bundle pgvector, but the isolation/accept tests never
+ * exercise vector math (that's Sprint 4 retrieval). Rewrite just the pgvector
+ * DDL so the schema loads: drop the extension, store embeddings as real[], and
+ * skip the ANN index. The real migration is untouched for cloud Supabase.
+ */
+function pgliteCompat(sql: string): string {
+  return sql
+    .replace(/create extension if not exists vector;/gi, "-- vector extension shimmed for pglite")
+    .replace(/\bvector\(384\)/gi, "real[]")
+    .replace(/create index \w+ on embeddings using hnsw[^;]*;/gi, "-- hnsw index skipped for pglite");
 }
 
 /**

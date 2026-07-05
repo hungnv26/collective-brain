@@ -62,3 +62,40 @@ export interface NodeVersion {
   edited_by: string | null;
   created_at: string;
 }
+
+export type IngestStatus = "queued" | "extracting" | "distilling" | "ready" | "failed";
+
+export interface IngestJob {
+  id: string;
+  org_id: string;
+  space_id: string;
+  source_kind: "paste" | "file" | "url";
+  source_uri: string | null;
+  status: IngestStatus;
+  error: string | null;
+  stats: { proposed?: number; dupes?: number; chars?: number };
+  created_at: string;
+}
+
+export interface ProposedNodeData {
+  title: string;
+  type: string;
+  confidence: "low" | "medium" | "high";
+  body_md: string;
+}
+
+export interface DupCandidate {
+  node_id: string;
+  title: string;
+  score: number;
+}
+
+export interface ReviewItem {
+  id: string;
+  job_id: string;
+  space_id: string;
+  proposed: ProposedNodeData;
+  dup_candidates: DupCandidate[];
+  status: "pending" | "accepted" | "edited" | "rejected";
+  created_node: string | null;
+}

@@ -8,7 +8,7 @@ const NAV: { label: string; icon: string; href?: string }[] = [
   { label: "Dashboard", icon: "▦", href: "/" },
   { label: "Review Queue", icon: "☑" },
   { label: "Graph", icon: "❖" },
-  { label: "Ingest", icon: "⤓" },
+  { label: "Ingest", icon: "⤓", href: "/ingest" },
 ];
 
 export function Sidebar({
