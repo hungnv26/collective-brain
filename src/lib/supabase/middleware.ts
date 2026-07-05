@@ -39,7 +39,9 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && !isPublicPath) {
+  // Redirect unauthenticated page requests to /login. API routes are their own
+  // auth boundary — they return JSON 401s, so never redirect them.
+  if (!user && !isPublicPath && !pathname.startsWith("/api")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
