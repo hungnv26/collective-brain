@@ -4,8 +4,8 @@ Multi-tenant knowledge-graph app for SME teams — *your company's memory,
 organised and answerable*. See the product & build plans in the Brain:
 `note/collective-brain-product-plan`, `note/collective-brain-sdlc-plan`.
 
-**Stack:** Next.js 16 (App Router) · Supabase (Postgres + RLS) · Claude API
-(later sprints) · TypeScript strict · Tailwind 4.
+**Stack:** Next.js 16 (App Router) · Supabase (Postgres + RLS) · Claude API ·
+TypeScript strict · Tailwind 4. Full report: [docs/TECH_STACK.md](docs/TECH_STACK.md).
 
 ---
 
