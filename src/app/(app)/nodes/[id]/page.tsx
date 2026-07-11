@@ -5,21 +5,33 @@ import { renderWikilinksToMarkdown } from "@/lib/nodes/wikilinks";
 import { NodeMarkdown } from "@/components/nodes/NodeMarkdown";
 import { NodeTypeChip } from "@/components/nodes/NodeTypeChip";
 import { DeleteNodeButton } from "@/components/nodes/DeleteNodeButton";
+import { PromoteButton } from "@/components/nodes/PromoteButton";
+import { getVisibleSpaces } from "@/lib/data/session";
+import { getSpace } from "@/lib/data/nodes";
 
 export const dynamic = "force-dynamic";
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString();
+const RANK: Record<string, number> = { private: 0, team: 1, org: 2 };
 
 export default async function NodePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const node = await getNode(id);
   if (!node) notFound();
 
-  const [backlinks, versions, map] = await Promise.all([
+  const [backlinks, versions, map, spaces, currentSpace] = await Promise.all([
     getBacklinks(id),
     getVersions(id),
     resolveWikilinkMap(node.org_id, node.body_md),
+    getVisibleSpaces(node.org_id),
+    getSpace(node.space_id),
   ]);
+
+  // Candidate targets: only spaces MORE visible than the node's current one.
+  const currentRank = RANK[currentSpace?.kind ?? "private"] ?? 0;
+  const promoteTargets = spaces
+    .filter((s) => (RANK[s.kind] ?? 0) > currentRank)
+    .map((s) => ({ id: s.id, name: s.name, kind: s.kind }));
   const markdown = renderWikilinksToMarkdown(node.body_md, (slug) => map.get(slug) ?? null);
 
   return (
@@ -44,6 +56,7 @@ export default async function NodePage({ params }: { params: Promise<{ id: strin
           >
             Edit
           </Link>
+          <PromoteButton nodeId={node.id} targets={promoteTargets} />
           <DeleteNodeButton id={node.id} spaceId={node.space_id} />
         </div>
 

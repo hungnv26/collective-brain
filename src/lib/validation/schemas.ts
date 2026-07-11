@@ -86,6 +86,11 @@ export const bulkAcceptSchema = z.object({
   minConfidence: z.enum(["low", "medium", "high"]).default("high"),
 });
 
+export const promoteNodeSchema = z.object({
+  toSpaceId: z.string().uuid(),
+});
+export type PromoteNodeInput = z.infer<typeof promoteNodeSchema>;
+
 export const askSchema = z.object({
   conversationId: z.string().uuid().optional(),
   question: z.string().trim().min(1, "Ask something").max(2000),

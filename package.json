@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:rls": "vitest run src/test/rls-isolation.test.ts"
+    "test:rls": "vitest run src/test/rls-isolation.test.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
@@ -21,6 +22,8 @@
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "vis-data": "^8.0.4",
+    "vis-network": "^10.1.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

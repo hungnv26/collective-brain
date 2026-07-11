@@ -1,11 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NODE_TYPES } from "@/lib/types";
+import type { TokenUsage } from "@/lib/usage/meter";
 
 export interface ProposedNode {
   title: string;
   type: string;
   confidence: "low" | "medium" | "high";
   body_md: string;
+}
+
+export interface DistillResult {
+  nodes: ProposedNode[];
+  usage: TokenUsage;
 }
 
 // Kept in sync with prompts/distill.system.md.
@@ -55,7 +61,7 @@ export function isDistillerConfigured(): boolean {
 }
 
 /** Distill raw text into proposed nodes via Claude (forced structured tool call). */
-export async function distill(sourceText: string): Promise<ProposedNode[]> {
+export async function distill(sourceText: string): Promise<DistillResult> {
   if (!isDistillerConfigured()) throw new Error("ANTHROPIC_API_KEY is not set");
   const client = new Anthropic();
   const model = process.env.CB_DISTILL_MODEL || "claude-opus-4-8";
@@ -77,5 +83,12 @@ export async function distill(sourceText: string): Promise<ProposedNode[]> {
   );
   if (!block) throw new Error("Distiller returned no structured output.");
   const nodes = (block.input as { nodes?: ProposedNode[] }).nodes ?? [];
-  return nodes.filter((n) => n.title?.trim() && n.body_md !== undefined);
+  return {
+    nodes: nodes.filter((n) => n.title?.trim() && n.body_md !== undefined),
+    usage: {
+      model,
+      inputTokens: res.usage.input_tokens,
+      outputTokens: res.usage.output_tokens,
+    },
+  };
 }

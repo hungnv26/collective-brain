@@ -77,3 +77,6 @@ wikilinks, ingest accept flow, Ask RLS, embed / dedupe, export.
 | `ANTHROPIC_API_KEY` | Claude API (ingest + Ask) |
 | `CB_DISTILL_MODEL` | Override distillation model (default `claude-opus-4-8`) |
 | `CB_ANSWER_MODEL` | Override answer model (default `claude-opus-4-8`) |
+| `RESEND_API_KEY` | Transactional email for invites (optional — falls back to a copyable join link) |
+| `CB_EMAIL_FROM` | From-address for invite email (default `Collective Brain <onboarding@resend.dev>`) |
+| `CB_MONTHLY_TOKEN_CAP` | Per-org monthly Claude token budget (default `5000000`); Ask returns 429 and ingest pauses when reached |
