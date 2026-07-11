@@ -106,4 +106,21 @@ describe("member roster", () => {
     );
     expect(roster.n).toBeGreaterThanOrEqual(2); // owner + member
   });
+
+  test("resolving your own role must scope by user_id, not just org", async () => {
+    // memberships_select returns EVERY member's row, so an org-only query yields
+    // multiple rows — that's what made getMembership's maybeSingle() collapse to
+    // null and treat an owner as a plain member. Scoping by user_id fixes it.
+    const orgOnly = await asUser(db, A.owner.id, async (q) =>
+      one<{ n: number }>(await q("select count(*)::int n from memberships where org_id=$1", [A.id])),
+    );
+    expect(orgOnly.n).toBeGreaterThan(1); // ambiguous for maybeSingle()
+
+    const mine = await asUser(db, A.owner.id, async (q) =>
+      one<{ role: string }>(
+        await q("select role from memberships where org_id=$1 and user_id=auth.uid()", [A.id]),
+      ),
+    );
+    expect(mine.role).toBe("owner");
+  });
 });

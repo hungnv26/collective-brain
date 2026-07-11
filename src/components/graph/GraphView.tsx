@@ -59,10 +59,11 @@ function frame(network: any, container: HTMLElement | null) {
   const spanX = maxX - minX + 160; // padding for node radius + labels
   const spanY = maxY - minY + 160;
   const scale = Math.min(1.1, Math.min(w / spanX, h / spanY));
+  // Instant (no animation): a concurrent physics-off redraw would otherwise
+  // interrupt an animated moveTo and leave the view off-centre.
   network.moveTo({
     position: { x: cx, y: cy },
     scale: Number.isFinite(scale) && scale > 0 ? scale : 1,
-    animation: { duration: 400, easingFunction: "easeInOutQuad" },
   });
 }
 
@@ -174,14 +175,27 @@ export function GraphView({ data }: { data: GraphData }) {
         const n = byId.get(id);
         if (n) setSelected({ id, title: n.title, type: n.type, degree: degree.get(id) ?? 0 });
       });
-      network.once("stabilizationIterationsDone", () => {
+      const settle = () => {
         // Freeze the layout so it stays framed (drag still works), then frame it.
         // network.fit() mis-centers under a 2× DPR canvas, so centre manually on
-        // the node bounding-box centre with a scale that leaves a small margin.
+        // the node bounding-box centre. Defer a frame so the physics-off redraw
+        // has applied before we move the view, else it clobbers the position.
         network.setOptions({ physics: false });
-        frame(network, containerRef.current);
-        setReady(true);
-      });
+        requestAnimationFrame(() => {
+          frame(network, containerRef.current);
+          setReady(true);
+        });
+      };
+      let framed = false;
+      const once = () => {
+        if (framed) return;
+        framed = true;
+        settle();
+      };
+      network.once("stabilizationIterationsDone", once);
+      // Fallback: small graphs can settle before the listener attaches, so frame
+      // anyway shortly after creation.
+      setTimeout(once, 1200);
     })();
 
     return () => {

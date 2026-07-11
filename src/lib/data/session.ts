@@ -33,7 +33,19 @@ export async function getMyOrgs(): Promise<Org[]> {
 /** The user's membership row for an org (or null if not a member). */
 export async function getMembership(orgId: string): Promise<Membership | null> {
   const supabase = await createClient();
-  const { data } = await supabase.from("memberships").select("*").eq("org_id", orgId).maybeSingle();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  // memberships_select RLS returns EVERY member's row in the org, so scope to
+  // this user's own row — otherwise maybeSingle() sees multiple rows and the
+  // caller's role reads as null (i.e. an owner would be treated as a member).
+  const { data } = await supabase
+    .from("memberships")
+    .select("*")
+    .eq("org_id", orgId)
+    .eq("user_id", user.id)
+    .maybeSingle();
   return (data as Membership | null) ?? null;
 }
 
