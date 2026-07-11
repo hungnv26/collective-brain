@@ -1,4 +1,8 @@
 allowBuilds:
+  # @sentry/cli's postinstall only fetches the source-map-upload binary, which
+  # we don't need without SENTRY_AUTH_TOKEN. Flip to true (and add to
+  # onlyBuiltDependencies) when you want build-time source-map upload.
+  '@sentry/cli': false
   esbuild: true
   sharp: true
   unrs-resolver: true

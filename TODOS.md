@@ -38,8 +38,12 @@ so each is an additive build later.
   ingest pause), `GET /api/usage`, and a dashboard usage bar.
 - **Demo seed** — `pnpm seed:demo` (`scripts/seed-demo.ts`) populates a demo org
   (nodes/links across spaces + a pending promotion) for dogfooding.
+- **Sentry** — `@sentry/nextjs` wired (server/edge/client instrumentation,
+  `onRequestError`, `global-error.tsx`, `withSentryConfig`). Gated on
+  `NEXT_PUBLIC_SENTRY_DSN`; no-ops with no DSN. Source-map upload needs
+  `SENTRY_AUTH_TOKEN` + flipping `@sentry/cli` to `true` in pnpm-workspace.yaml.
 
-Still open from Sprint 5: Sentry wiring; the deferred onboarding wizard (D1).
+Still open from Sprint 5: the deferred onboarding wizard (D1).
 
 ## V1
 - **Per-user MCP keys** (beta MCP keys, when built, resolve to the org space
