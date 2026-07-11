@@ -57,13 +57,33 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-dashed border-border bg-background p-8 text-center">
-        <p className="text-sm font-medium">Your brain is empty — for now.</p>
-        <p className="mt-1 text-sm text-muted">
-          Node editing lands in Sprint 2 and ingestion in Sprint 3. The foundation
-          (auth, orgs, spaces, and airtight permissions) is in place.
-        </p>
-      </div>
+      {(nodeCount ?? 0) === 0 ? (
+        <div className="mt-6 rounded-xl border border-dashed border-border bg-background p-8 text-center">
+          <p className="text-sm font-medium">Your brain is empty — for now.</p>
+          <p className="mt-1 text-sm text-muted">
+            <Link href="/ingest" className="underline">
+              Ingest
+            </Link>{" "}
+            a document or transcript to distill it into knowledge nodes, or add a note in a space —
+            then ask questions and get cited answers.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-6 flex flex-wrap gap-2 text-sm">
+          <Link
+            href="/ingest"
+            className="rounded-md border border-border px-3 py-1.5 font-medium hover:bg-panel"
+          >
+            Ingest more
+          </Link>
+          <Link
+            href="/graph"
+            className="rounded-md border border-border px-3 py-1.5 font-medium hover:bg-panel"
+          >
+            Explore the graph
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

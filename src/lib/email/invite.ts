@@ -1,4 +1,6 @@
-import { emailFrom, isEmailConfigured, resendApiKey } from "@/lib/env";
+import { escapeHtml, sendEmail, type SendResult } from "./send";
+
+export type { SendResult };
 
 export interface InviteEmail {
   to: string;
@@ -6,12 +8,6 @@ export interface InviteEmail {
   orgName: string;
   inviterEmail?: string | null;
   role?: string;
-}
-
-export interface SendResult {
-  sent: boolean;
-  reason?: "not-configured" | "error";
-  error?: string;
 }
 
 /** Subject + HTML/text body for an invite. Pure — no I/O, so it's unit-testable. */
@@ -38,38 +34,8 @@ export function renderInviteEmail(e: InviteEmail): { subject: string; html: stri
   return { subject, html, text };
 }
 
-/**
- * Best-effort invite email via Resend's REST API (no SDK — just fetch). When no
- * provider key is configured it no-ops with `sent: false` so the caller can fall
- * back to showing the copyable link. Never throws.
- */
+/** Best-effort invite email; no-ops (sent:false) when no provider is configured. */
 export async function sendInviteEmail(e: InviteEmail): Promise<SendResult> {
-  if (!isEmailConfigured()) return { sent: false, reason: "not-configured" };
-
   const { subject, html, text } = renderInviteEmail(e);
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${resendApiKey()}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ from: emailFrom(), to: e.to, subject, html, text }),
-    });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      return { sent: false, reason: "error", error: `${res.status} ${detail}`.trim() };
-    }
-    return { sent: true };
-  } catch (err) {
-    return { sent: false, reason: "error", error: err instanceof Error ? err.message : "unknown" };
-  }
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return sendEmail({ to: e.to, subject, html, text });
 }

@@ -80,5 +80,6 @@ wikilinks, ingest accept flow, Ask RLS, embed / dedupe, export.
 | `RESEND_API_KEY` | Transactional email for invites (optional — falls back to a copyable join link) |
 | `CB_EMAIL_FROM` | From-address for invite email (default `Collective Brain <onboarding@resend.dev>`) |
 | `CB_MONTHLY_TOKEN_CAP` | Per-org monthly Claude token budget (default `5000000`); Ask returns 429 and ingest pauses when reached |
+| `CRON_SECRET` | Bearer token gating the scheduled maintenance sweep (`/api/cron/maintenance`, weekly via Vercel Cron) |
 | `NEXT_PUBLIC_SENTRY_DSN` | Sentry error monitoring (optional — SDK disabled when unset) |
 | `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` | Build-time source-map upload for Sentry (CI only; optional) |
