@@ -46,6 +46,11 @@ so each is an additive build later.
 Still open from Sprint 5: the deferred onboarding wizard (D1).
 
 ## V1
+- **Maintenance agents — built** (on-demand): `0010_agents.sql` (`agent_runs` +
+  `mark_stale_nodes`), `lib/agents/*`, `POST /api/agents/:agent/run` (owner/admin),
+  and the `/maintenance` page with weekly digest, stale scan, gap report, and
+  dedupe scan. Still to do: **scheduling** (Vercel Cron / Inngest, D3) to run them
+  automatically + email the weekly digest.
 - **Per-user MCP keys** (beta MCP keys, when built, resolve to the org space
   only). (D6)
 
