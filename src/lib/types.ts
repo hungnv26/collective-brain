@@ -1,6 +1,26 @@
 export type MembershipRole = "owner" | "admin" | "lead" | "member" | "viewer";
 export type SpaceKind = "private" | "team" | "org";
 export type NodeStatus = "draft" | "reviewed" | "stale" | "archived";
+export type PromotionStatus = "pending" | "approved" | "rejected";
+
+/** A pending promotion as `list_promotions` returns it (node preview + spaces). */
+export interface PromotionListItem {
+  id: string;
+  node_id: string;
+  node_title: string;
+  node_type: string;
+  node_body_md: string;
+  from_space: string;
+  from_name: string;
+  to_space: string;
+  to_name: string;
+  to_kind: SpaceKind;
+  requested_by: string | null;
+  requester_email: string | null;
+  status: PromotionStatus;
+  can_approve: boolean;
+  created_at: string;
+}
 
 export interface Org {
   id: string;

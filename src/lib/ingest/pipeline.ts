@@ -3,6 +3,7 @@ import { distill } from "@/lib/ai/distill";
 import { embed, fromPgVector } from "@/lib/ai/embed";
 import { extractText, type SourceKind } from "./extract";
 import { findDuplicates, type ExistingEmbedding } from "./dedupe";
+import { monthToDateTokens, monthlyTokenCap, overCap, recordUsage } from "@/lib/usage/meter";
 
 export interface IngestParams {
   spaceId: string;
@@ -50,13 +51,21 @@ export async function runIngest(
   const jobId = (job as { id: string }).id;
 
   try {
+    // Enforce the monthly token cap before spending on distillation.
+    if (overCap(await monthToDateTokens(supabase, orgId))) {
+      throw new Error(
+        `Monthly usage cap reached (${monthlyTokenCap().toLocaleString()} tokens). Ingest paused until next month or a higher cap.`,
+      );
+    }
+
     const { text } = await extractText(params.sourceKind, params);
     await supabase
       .from("ingest_jobs")
       .update({ status: "distilling", source_text: text.slice(0, 100_000) })
       .eq("id", jobId);
 
-    const proposed = await distill(text);
+    const { nodes: proposed, usage } = await distill(text);
+    await recordUsage(supabase, { orgId, kind: "distill", usage });
 
     // Existing node embeddings in this org, for dedupe.
     const { data: embRows } = await supabase

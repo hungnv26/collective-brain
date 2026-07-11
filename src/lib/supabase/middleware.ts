@@ -42,8 +42,13 @@ export async function updateSession(request: NextRequest) {
   // Redirect unauthenticated page requests to /login. API routes are their own
   // auth boundary — they return JSON 401s, so never redirect them.
   if (!user && !isPublicPath && !pathname.startsWith("/api")) {
+    const dest = pathname + request.nextUrl.search;
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    url.search = "";
+    // Preserve where they were headed (e.g. an invite link) so login can send
+    // them back after auth.
+    if (pathname !== "/") url.searchParams.set("next", dest);
     return NextResponse.redirect(url);
   }
 

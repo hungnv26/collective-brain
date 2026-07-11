@@ -11,6 +11,15 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Where to land after auth. Only same-site paths are honoured (no open
+  // redirect); the callback threads this through the code exchange.
+  function callbackUrl() {
+    const raw = new URLSearchParams(window.location.search).get("next");
+    const next = raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
+    const base = `${window.location.origin}/auth/callback`;
+    return next ? `${base}?next=${encodeURIComponent(next)}` : base;
+  }
+
   async function sendMagicLink(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -19,7 +28,7 @@ export default function LoginPage() {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { emailRedirectTo: callbackUrl() },
       });
       if (error) throw error;
       setSent(true);
@@ -34,7 +43,7 @@ export default function LoginPage() {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: callbackUrl() },
     });
   }
 
