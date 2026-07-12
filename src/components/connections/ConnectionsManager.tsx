@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Space } from "@/lib/types";
 import type { ConnectionRow } from "@/lib/data/connections";
@@ -9,6 +10,7 @@ import { PROVIDER_LABEL, type Provider } from "@/lib/connectors/types";
 const CONFIG_HINT: Record<string, { label: string; placeholder: string; key: string }> = {
   slack: { label: "Channels", placeholder: "C0123ABC, C0456DEF", key: "channels" },
   gmail: { label: "Gmail label", placeholder: "brain", key: "label" },
+  telegram: { label: "Chat IDs", placeholder: "-1001234567890", key: "chatIds" },
 };
 
 export function ConnectionsManager({
@@ -48,26 +50,34 @@ export function ConnectionsManager({
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {isAdmin && (
-        <div className="flex flex-wrap gap-2">
-          {(["slack", "gmail"] as const).map((p) =>
-            configured[p] ? (
-              <a
-                key={p}
-                href={`/api/connectors/${p}/authorize`}
-                className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90"
-              >
-                Connect {PROVIDER_LABEL[p]}
-              </a>
-            ) : (
-              <span
-                key={p}
-                title={`Set ${p === "slack" ? "SLACK_CLIENT_ID/SECRET" : "GOOGLE_CLIENT_ID/SECRET"} to enable`}
-                className="rounded-md border border-dashed border-border px-3 py-1.5 text-sm text-muted/60"
-              >
-                {PROVIDER_LABEL[p]} — not configured
-              </span>
-            ),
-          )}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {(["slack", "gmail"] as const).map((p) =>
+              configured[p] ? (
+                <a
+                  key={p}
+                  href={`/api/connectors/${p}/authorize`}
+                  className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90"
+                >
+                  Connect {PROVIDER_LABEL[p]}
+                </a>
+              ) : (
+                <span
+                  key={p}
+                  title={`Set ${p === "slack" ? "SLACK_CLIENT_ID/SECRET" : "GOOGLE_CLIENT_ID/SECRET"} to enable`}
+                  className="rounded-md border border-dashed border-border px-3 py-1.5 text-sm text-muted/60"
+                >
+                  {PROVIDER_LABEL[p]} — not configured
+                </span>
+              ),
+            )}
+            <TelegramConnect onDone={() => router.refresh()} onError={setError} />
+          </div>
+          <p className="text-xs text-muted">
+            WhatsApp &amp; Instagram have no API for group chats — export the chat and upload the{" "}
+            <code className="rounded bg-panel px-1">.txt</code> on the{" "}
+            <Link href="/ingest" className="underline">Ingest</Link> page. CB auto-detects WhatsApp exports.
+          </p>
         </div>
       )}
 
@@ -95,6 +105,65 @@ export function ConnectionsManager({
         </ul>
       )}
     </div>
+  );
+}
+
+function TelegramConnect({
+  onDone,
+  onError,
+}: {
+  onDone: () => void;
+  onError: (m: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [token, setToken] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function connect() {
+    setBusy(true);
+    onError(null);
+    const res = await fetch("/api/connectors/telegram/connect", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    setBusy(false);
+    if (res.ok) {
+      setToken("");
+      setOpen(false);
+      onDone();
+    } else {
+      const { error } = await res.json().catch(() => ({ error: "" }));
+      onError(error || "Could not connect Telegram.");
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90"
+      >
+        Connect Telegram
+      </button>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-2">
+      <input
+        value={token}
+        onChange={(e) => setToken(e.target.value)}
+        placeholder="Bot token from @BotFather"
+        className="w-56 rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-zinc-400"
+      />
+      <button
+        onClick={connect}
+        disabled={busy || token.trim().length < 20}
+        className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
+      >
+        {busy ? "Checking…" : "Connect"}
+      </button>
+    </span>
   );
 }
 

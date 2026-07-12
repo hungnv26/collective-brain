@@ -4,6 +4,7 @@ import { embed, fromPgVector } from "@/lib/ai/embed";
 import { extractText, type SourceKind } from "./extract";
 import { findDuplicates, type ExistingEmbedding } from "./dedupe";
 import { monthToDateTokens, monthlyTokenCap, overCap, recordUsage } from "@/lib/usage/meter";
+import { looksLikeWhatsAppExport, parseWhatsAppExport } from "@/lib/connectors/whatsapp";
 
 export interface IngestParams {
   spaceId: string;
@@ -58,7 +59,12 @@ export async function runIngest(
       );
     }
 
-    const { text } = await extractText(params.sourceKind, params);
+    const extracted = await extractText(params.sourceKind, params);
+    // A WhatsApp chat export (no API for group chats) arrives as an uploaded
+    // .txt — detect it and clean it to plain "Author: message" before distilling.
+    const text = looksLikeWhatsAppExport(extracted.text)
+      ? parseWhatsAppExport(extracted.text)
+      : extracted.text;
     await supabase
       .from("ingest_jobs")
       .update({ status: "distilling", source_text: text.slice(0, 100_000) })

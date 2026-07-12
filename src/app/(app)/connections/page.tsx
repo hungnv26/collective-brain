@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { getMembership, getMyOrgs, getVisibleSpaces } from "@/lib/data/session";
 import { listConnections } from "@/lib/data/connections";
@@ -24,7 +25,7 @@ export default async function ConnectionsPage() {
       <h1 className="text-2xl font-semibold tracking-tight">Connections</h1>
       <p className="mt-1 text-sm text-muted">
         Pull knowledge in from Slack and Gmail. New messages are distilled into nodes and land in
-        your <a href="/review" className="underline">Review Queue</a> before anything is kept.
+        your <Link href="/review" className="underline">Review Queue</Link> before anything is kept.
       </p>
       <div className="mt-6">
         <ConnectionsManager

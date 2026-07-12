@@ -1,10 +1,11 @@
-export type Provider = "slack" | "gmail" | "whatsapp" | "instagram";
+export type Provider = "slack" | "gmail" | "telegram" | "whatsapp" | "instagram";
 
-export const PROVIDERS: Provider[] = ["slack", "gmail", "whatsapp", "instagram"];
+export const PROVIDERS: Provider[] = ["slack", "gmail", "telegram", "whatsapp", "instagram"];
 
 export const PROVIDER_LABEL: Record<Provider, string> = {
   slack: "Slack",
   gmail: "Gmail",
+  telegram: "Telegram",
   whatsapp: "WhatsApp",
   instagram: "Instagram",
 };
