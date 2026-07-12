@@ -34,3 +34,15 @@ export function emailFrom(): string {
 export function isEmailConfigured(): boolean {
   return Boolean(resendApiKey());
 }
+
+/** Server-only privileged key for cross-org background jobs (cron). */
+export function serviceRoleKey(): string {
+  const v = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!v) throw new Error("Missing env SUPABASE_SERVICE_ROLE_KEY");
+  return v;
+}
+
+/** Shared secret the cron scheduler must present. */
+export function cronSecret(): string | undefined {
+  return process.env.CRON_SECRET || undefined;
+}
