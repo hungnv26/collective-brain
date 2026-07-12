@@ -91,6 +91,19 @@ export const promoteNodeSchema = z.object({
 });
 export type PromoteNodeInput = z.infer<typeof promoteNodeSchema>;
 
+export const createTeamSchema = z.object({
+  name: z.string().trim().min(2, "Team name must be at least 2 characters").max(60),
+});
+
+export const addTeamMemberSchema = z.object({
+  userId: z.string().uuid(),
+  isLead: z.boolean().default(false),
+});
+
+export const createTeamSpaceSchema = z.object({
+  name: z.string().trim().min(2, "Space name must be at least 2 characters").max(80),
+});
+
 export const askSchema = z.object({
   conversationId: z.string().uuid().optional(),
   question: z.string().trim().min(1, "Ask something").max(2000),

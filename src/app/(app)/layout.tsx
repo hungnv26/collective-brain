@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { requireUser, getMyOrgs, getMembership, getVisibleSpaces } from "@/lib/data/session";
+import { countPendingReviews } from "@/lib/data/ingest";
 import { Sidebar } from "@/components/app-shell/Sidebar";
 import { TopBar } from "@/components/app-shell/TopBar";
 
@@ -15,14 +16,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const selected = (await cookies()).get("cb_org")?.value;
   const currentOrg = orgs.find((o) => o.id === selected) ?? orgs[0];
 
-  const [spaces, membership] = await Promise.all([
+  const [spaces, membership, reviewCount] = await Promise.all([
     getVisibleSpaces(currentOrg.id),
     getMembership(currentOrg.id),
+    countPendingReviews(currentOrg.id),
   ]);
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      <Sidebar orgs={orgs} currentOrg={currentOrg} spaces={spaces} role={membership?.role ?? "member"} />
+      <Sidebar
+        orgs={orgs}
+        currentOrg={currentOrg}
+        spaces={spaces}
+        role={membership?.role ?? "member"}
+        reviewCount={reviewCount}
+      />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopBar email={user.email ?? ""} />
         <main className="flex-1 overflow-auto bg-panel">{children}</main>

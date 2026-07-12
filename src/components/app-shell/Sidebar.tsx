@@ -6,11 +6,12 @@ import { SpaceTree } from "./SpaceTree";
 const NAV: { label: string; icon: string; href?: string }[] = [
   { label: "Ask", icon: "✦", href: "/ask" },
   { label: "Dashboard", icon: "▦", href: "/" },
-  { label: "Review Queue", icon: "☑" },
+  { label: "Review Queue", icon: "☑", href: "/review" },
   { label: "Promotions", icon: "↑", href: "/promotions" },
   { label: "Graph", icon: "❖", href: "/graph" },
   { label: "Ingest", icon: "⤓", href: "/ingest" },
   { label: "Maintenance", icon: "⟳", href: "/maintenance" },
+  { label: "Teams", icon: "⧉", href: "/teams" },
   { label: "Members", icon: "◎", href: "/members" },
 ];
 
@@ -19,11 +20,13 @@ export function Sidebar({
   currentOrg,
   spaces,
   role,
+  reviewCount = 0,
 }: {
   orgs: Org[];
   currentOrg: Org;
   spaces: Space[];
   role: MembershipRole;
+  reviewCount?: number;
 }) {
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-background">
@@ -43,6 +46,11 @@ export function Sidebar({
                 >
                   <span className="w-4 text-center">{item.icon}</span>
                   {item.label}
+                  {item.label === "Review Queue" && reviewCount > 0 && (
+                    <span className="ml-auto rounded-full bg-foreground px-1.5 text-xs font-medium tabular-nums text-background">
+                      {reviewCount}
+                    </span>
+                  )}
                 </Link>
               </li>
             ) : (
