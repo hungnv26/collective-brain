@@ -10,6 +10,7 @@ const NAV: { label: string; icon: string; href?: string }[] = [
   { label: "Promotions", icon: "↑", href: "/promotions" },
   { label: "Graph", icon: "❖", href: "/graph" },
   { label: "Ingest", icon: "⤓", href: "/ingest" },
+  { label: "Connections", icon: "⇄", href: "/connections" },
   { label: "Maintenance", icon: "⟳", href: "/maintenance" },
   { label: "Teams", icon: "⧉", href: "/teams" },
   { label: "Members", icon: "◎", href: "/members" },

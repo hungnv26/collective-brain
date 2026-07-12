@@ -46,3 +46,23 @@ export function serviceRoleKey(): string {
 export function cronSecret(): string | undefined {
   return process.env.CRON_SECRET || undefined;
 }
+
+// ---------- connector OAuth apps (server-only) ----------
+export function slackClientId(): string | undefined {
+  return process.env.SLACK_CLIENT_ID || undefined;
+}
+export function slackClientSecret(): string | undefined {
+  return process.env.SLACK_CLIENT_SECRET || undefined;
+}
+export function googleClientId(): string | undefined {
+  return process.env.GOOGLE_CLIENT_ID || undefined;
+}
+export function googleClientSecret(): string | undefined {
+  return process.env.GOOGLE_CLIENT_SECRET || undefined;
+}
+
+/** Which connector providers have their OAuth app configured. */
+export function connectorConfigured(provider: "slack" | "gmail"): boolean {
+  if (provider === "slack") return Boolean(slackClientId() && slackClientSecret());
+  return Boolean(googleClientId() && googleClientSecret());
+}
