@@ -37,9 +37,3 @@ export interface Connector {
   exchangeCode?(code: string, redirectUri: string): Promise<Secrets>;
   fetchSince(secrets: Secrets, cursor: string | null, config: ConnectorConfig): Promise<FetchResult>;
 }
-
-/**
- * Registered adapters. Empty at Phase 0 — Slack registers here in Phase 1, then
- * Gmail, etc. The sync runner skips any provider without an adapter.
- */
-export const CONNECTORS: Partial<Record<Provider, Connector>> = {};

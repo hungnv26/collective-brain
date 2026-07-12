@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { CONNECTORS, type NormalizedItem, type Provider, type Secrets } from "./types";
+import { CONNECTORS } from "./registry";
+import type { NormalizedItem, Provider, Secrets } from "./types";
 import { distill, isDistillerConfigured } from "@/lib/ai/distill";
 import { recordUsage } from "@/lib/usage/meter";
 
