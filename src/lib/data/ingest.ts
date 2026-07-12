@@ -30,3 +30,46 @@ export async function listPendingReviewItems(jobId: string): Promise<ReviewItem[
     .order("created_at", { ascending: true });
   return (data ?? []) as ReviewItem[];
 }
+
+export interface ReviewGroup {
+  job: IngestJob;
+  items: ReviewItem[];
+}
+
+/**
+ * Every pending review item across the org, grouped by ingest job — the
+ * aggregate Review Queue. RLS scopes both reads to spaces the caller can read.
+ */
+export async function listPendingReviewsByOrg(orgId: string): Promise<ReviewGroup[]> {
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("review_items")
+    .select("id, job_id, space_id, proposed, dup_candidates, status, created_node")
+    .eq("org_id", orgId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+  const items = (rows ?? []) as ReviewItem[];
+  if (items.length === 0) return [];
+
+  const jobIds = [...new Set(items.map((i) => i.job_id))];
+  const { data: jobRows } = await supabase.from("ingest_jobs").select("*").in("id", jobIds);
+  const jobById = new Map((jobRows ?? []).map((j) => [(j as IngestJob).id, j as IngestJob]));
+
+  const groups: ReviewGroup[] = [];
+  for (const id of jobIds) {
+    const job = jobById.get(id);
+    if (job) groups.push({ job, items: items.filter((i) => i.job_id === id) });
+  }
+  return groups;
+}
+
+/** Count of pending review items across the org (for the nav badge). */
+export async function countPendingReviews(orgId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("review_items")
+    .select("*", { count: "exact", head: true })
+    .eq("org_id", orgId)
+    .eq("status", "pending");
+  return count ?? 0;
+}

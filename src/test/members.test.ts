@@ -97,6 +97,30 @@ describe("accepting an invite adds the user to the org", () => {
       }),
     ).rejects.toThrow(/invalid or expired/);
   });
+
+  test("accepting a second invite does not create a duplicate private brain", async () => {
+    // Two separate invites for the same person (e.g. re-invited).
+    const tokens = await asUser(db, A.owner.id, async (q) => [
+      one<{ token: string }>(await q("select token from create_invite($1,$2,'member')", [A.id, A.outsider.email])).token,
+      one<{ token: string }>(await q("select token from create_invite($1,$2,'member')", [A.id, A.outsider.email])).token,
+    ]);
+
+    await asUser(db, A.outsider.id, async (q) => {
+      await q("select ensure_self($1)", [A.outsider.email]);
+      await q("select accept_invite($1)", [tokens[0]]);
+      await q("select accept_invite($1)", [tokens[1]]); // second accept
+    });
+
+    const brains = await asUser(db, A.outsider.id, async (q) =>
+      one<{ n: number }>(
+        await q(
+          "select count(*)::int n from spaces where org_id=$1 and kind='private' and owner_user_id=auth.uid()",
+          [A.id],
+        ),
+      ),
+    );
+    expect(brains.n).toBe(1); // idempotent — not two
+  });
 });
 
 describe("member roster", () => {
