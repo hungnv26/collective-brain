@@ -5,7 +5,8 @@ organised and answerable*. See the product & build plans in the Brain:
 `note/collective-brain-product-plan`, `note/collective-brain-sdlc-plan`.
 
 **Stack:** Next.js 16 (App Router) · Supabase (Postgres + RLS) · Claude API ·
-TypeScript strict · Tailwind 4. Full report: [docs/TECH_STACK.md](docs/TECH_STACK.md).
+TypeScript strict · Tailwind 4. Stack details: [docs/TECH_STACK.md](docs/TECH_STACK.md) ·
+Product & technical report: [docs/REPORT.md](docs/REPORT.md).
 
 ---
 
