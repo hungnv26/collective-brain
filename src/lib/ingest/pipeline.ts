@@ -4,7 +4,16 @@ import { getOrgLlmOverride } from "@/lib/data/org-settings";
 import { embed, fromPgVector } from "@/lib/ai/embed";
 import { extractText, type SourceKind } from "./extract";
 import { findDuplicates, type ExistingEmbedding } from "./dedupe";
-import { monthToDateTokens, monthlyTokenCap, overCap, recordUsage } from "@/lib/usage/meter";
+import {
+  monthlyCostCap,
+  monthlyTokenCap,
+  overCap,
+  overCostCap,
+  recordUsage,
+  totalCost,
+  totalTokens,
+  usageThisMonth,
+} from "@/lib/usage/meter";
 import { looksLikeWhatsAppExport, parseWhatsAppExport } from "@/lib/connectors/whatsapp";
 
 export interface IngestParams {
@@ -53,10 +62,16 @@ export async function runIngest(
   const jobId = (job as { id: string }).id;
 
   try {
-    // Enforce the monthly token cap before spending on distillation.
-    if (overCap(await monthToDateTokens(supabase, orgId))) {
+    // Enforce the monthly token + cost caps before spending on distillation.
+    const monthUsage = await usageThisMonth(supabase, orgId);
+    if (overCap(totalTokens(monthUsage))) {
       throw new Error(
         `Monthly usage cap reached (${monthlyTokenCap().toLocaleString()} tokens). Ingest paused until next month or a higher cap.`,
+      );
+    }
+    if (overCostCap(totalCost(monthUsage))) {
+      throw new Error(
+        `Monthly cost cap reached ($${monthlyCostCap().toLocaleString()}). Ingest paused until next month or a higher cap.`,
       );
     }
 

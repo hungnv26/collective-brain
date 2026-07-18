@@ -75,6 +75,7 @@ export class AnthropicCompatProvider implements LlmProvider {
       data: (block?.input as T) ?? null,
       refused,
       usage: {
+        provider: this.cfg.id,
         model: req.model,
         inputTokens: res.usage.input_tokens,
         outputTokens: res.usage.output_tokens,
@@ -99,9 +100,10 @@ export class AnthropicCompatProvider implements LlmProvider {
           }
         }
       },
-      async finalUsage() {
+      finalUsage: async () => {
         const msg = await messageStream.finalMessage();
         return {
+          provider: this.cfg.id,
           model: msg.model,
           inputTokens: msg.usage.input_tokens,
           outputTokens: msg.usage.output_tokens,
