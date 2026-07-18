@@ -156,7 +156,8 @@ pnpm test:rls   # the cross-tenant isolation gate
 | **Testing** | Vitest against PGlite (embedded Postgres — no Docker) |
 | **Tooling / deploy** | pnpm · Vercel · Supabase CLI |
 
-Full write-up: [docs/TECH_STACK.md](docs/TECH_STACK.md).
+Full write-up: [docs/TECH_STACK.md](docs/TECH_STACK.md) · product & technical
+report: [docs/REPORT.md](docs/REPORT.md).
 
 ---
 
