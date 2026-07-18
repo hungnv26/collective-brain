@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseUnavailable } from "@/lib/supabase/guard";
@@ -7,7 +6,17 @@ import { getMyOrgs } from "@/lib/data/session";
 import { retrieve } from "@/lib/retrieval/retrieve";
 import { answerStream, citedSources, isAnswererConfigured } from "@/lib/ask/answer";
 import { askSchema } from "@/lib/validation/schemas";
-import { monthToDateTokens, monthlyTokenCap, overCap, recordUsage } from "@/lib/usage/meter";
+import {
+  monthlyCostCap,
+  monthlyTokenCap,
+  overCap,
+  overCostCap,
+  recordUsage,
+  totalCost,
+  totalTokens,
+  usageThisMonth,
+} from "@/lib/usage/meter";
+import { getOrgLlmOverride } from "@/lib/data/org-settings";
 
 export const maxDuration = 60;
 
@@ -16,7 +25,7 @@ export async function POST(request: Request) {
   const unavailable = supabaseUnavailable();
   if (unavailable) return unavailable;
   if (!isAnswererConfigured()) {
-    return NextResponse.json({ error: "Ask needs ANTHROPIC_API_KEY set." }, { status: 503 });
+    return NextResponse.json({ error: "Ask needs an LLM provider configured (missing API key)." }, { status: 503 });
   }
 
   const supabase = await createClient();
@@ -36,10 +45,26 @@ export async function POST(request: Request) {
   const org = orgs.find((o) => o.id === selected) ?? orgs[0];
   if (!org) return NextResponse.json({ error: "no org" }, { status: 400 });
 
-  // Enforce the monthly token cap before spending on an answer.
-  if (overCap(await monthToDateTokens(supabase, org.id))) {
+  // Resolve this org's provider (its override, if any, wins over the env default).
+  const llmOverride = await getOrgLlmOverride(supabase, org.id);
+  if (!isAnswererConfigured(llmOverride)) {
+    return NextResponse.json(
+      { error: "This org's LLM provider isn't configured (missing API key)." },
+      { status: 503 },
+    );
+  }
+
+  // Enforce the monthly token + cost caps before spending on an answer.
+  const usage = await usageThisMonth(supabase, org.id);
+  if (overCap(totalTokens(usage))) {
     return NextResponse.json(
       { error: `Monthly usage cap reached (${monthlyTokenCap().toLocaleString()} tokens).` },
+      { status: 429 },
+    );
+  }
+  if (overCostCap(totalCost(usage))) {
+    return NextResponse.json(
+      { error: `Monthly cost cap reached ($${monthlyCostCap().toLocaleString()}).` },
       { status: 429 },
     );
   }
@@ -63,7 +88,6 @@ export async function POST(request: Request) {
   });
 
   const { sources, context } = await retrieve(supabase, org.id, question);
-  const client = new Anthropic();
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -74,25 +98,18 @@ export async function POST(request: Request) {
         send({ type: "meta", conversationId, sources });
 
         let full = "";
-        const claude = answerStream(client, question, context);
-        for await (const event of claude) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            full += event.delta.text;
-            send({ type: "delta", text: event.delta.text });
-          }
+        const answer = answerStream(question, context, llmOverride);
+        for await (const { text } of answer) {
+          full += text;
+          send({ type: "delta", text });
         }
 
-        // Record token usage (best-effort) from the completed message.
-        const finalMsg = await claude.finalMessage();
+        // Record token usage (best-effort) from the completed stream.
         await recordUsage(supabase, {
           orgId: org.id,
           userId: user.id,
           kind: "ask",
-          usage: {
-            model: finalMsg.model,
-            inputTokens: finalMsg.usage.input_tokens,
-            outputTokens: finalMsg.usage.output_tokens,
-          },
+          usage: await answer.finalUsage(),
         });
 
         const cited = citedSources(full, sources);

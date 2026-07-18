@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseUnavailable } from "@/lib/supabase/guard";
 import { getMyOrgs } from "@/lib/data/session";
-import { monthlyTokenCap, totalTokens, usageThisMonth } from "@/lib/usage/meter";
+import { monthlyCostCap, monthlyTokenCap, totalCost, totalTokens, usageThisMonth } from "@/lib/usage/meter";
 
 /** GET /api/usage — month-to-date token usage for the current org, vs the cap. */
 export async function GET() {
@@ -25,6 +25,8 @@ export async function GET() {
   return NextResponse.json({
     monthToDate: totalTokens(rows),
     cap: monthlyTokenCap(),
+    costUsd: totalCost(rows),
+    costCap: monthlyCostCap(),
     byKind: rows,
   });
 }

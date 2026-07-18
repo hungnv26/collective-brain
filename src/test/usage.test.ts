@@ -26,8 +26,8 @@ describe("pure metering helpers", () => {
 
   test("totalTokens sums input + output across rows", () => {
     const rows: UsageRow[] = [
-      { kind: "ask", model: "m", calls: 2, input_tokens: 100, output_tokens: 50 },
-      { kind: "distill", model: "m", calls: 1, input_tokens: 300, output_tokens: 200 },
+      { kind: "ask", provider: "anthropic", model: "m", calls: 2, input_tokens: 100, output_tokens: 50, cost_usd: 0 },
+      { kind: "distill", provider: "anthropic", model: "m", calls: 1, input_tokens: 300, output_tokens: 200, cost_usd: 0 },
     ];
     expect(totalTokens(rows)).toBe(650);
   });

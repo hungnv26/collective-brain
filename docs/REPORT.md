@@ -17,7 +17,7 @@ scoped to exactly what they're allowed to see.
 
 | Lines of TS | Pages | API routes | DB tables | Migrations | Tests |
 |---|---|---|---|---|---|
-| ~9,300 | 19 | 27 | 24 | 13 | 111 |
+| ~10,500 | 20 | 29 | 25 | 15 | 132 |
 
 ---
 
@@ -94,8 +94,11 @@ every node keeps its source, author, timestamps, and full version history.
 ### Operate
 - **Maintenance agents** — weekly digest (emailed to admins), stale scan, gap
   report, duplicate scan; on-demand or scheduled.
-- **Usage metering** — every Claude call logged per org; a monthly token cap
-  pauses spend automatically.
+- **Usage metering** — every LLM call logged per org with provider, model, and
+  USD cost; monthly token and cost caps pause spend automatically.
+- **LLM providers** — swappable per org between Anthropic Claude, Kimi
+  (Moonshot), and GLM (Zhipu) from an admin settings page, with a
+  connection-test button and per-provider pricing.
 - **Export** — per-space Obsidian-compatible markdown zip.
 
 ---
@@ -105,7 +108,7 @@ every node keeps its source, author, timestamps, and full version history.
 **The security invariant: permissions are enforced in the database, before any
 content reaches the application or the AI model.**
 
-Every one of the 24 tables is default-deny under Postgres Row-Level Security.
+Every one of the 25 tables is default-deny under Postgres Row-Level Security.
 Permission logic lives in a hidden `app` schema; two primitives —
 `can_read_space` and `can_write_space` — govern everything. Because retrieval
 queries run under the asker's own session, the AI can only ever be shown
@@ -135,14 +138,14 @@ residency (Supabase Sydney).
 | Layer | Technology | Role |
 |---|---|---|
 | Frontend | Next.js 16 · React 19 · Tailwind 4 | App Router, server components + route handlers, one full-stack TypeScript codebase |
-| Database | Supabase Postgres 15 | 24 tables, 13 forward-only migrations, RLS everywhere; auth (magic link + Google) and storage |
+| Database | Supabase Postgres 15 | 25 tables, 15 forward-only migrations, RLS everywhere; auth (magic link + Google) and storage |
 | Retrieval | pgvector + Postgres FTS | Hybrid search: HNSW cosine index + tsvector keyword, fused by reciprocal-rank fusion |
-| AI | Claude API (`claude-opus-4-8`) | Distillation via forced tool-use → structured nodes; streamed cited answers; models swappable by env var |
+| AI | Anthropic Claude · Kimi · GLM | Provider swappable per org via an Anthropic-compatible adapter (default `claude-opus-4-8`); distillation via forced tool-use → structured nodes; streamed cited answers |
 | Embeddings | custom 384-dim | Deterministic feature-hash embedder (offline, zero cost) — a single seam to swap for a neural model |
 | Graph UI | vis-network | Force-directed canvas of nodes/links, client-only |
 | Email | Resend | Invite emails + weekly digest (graceful no-op when unconfigured) |
 | Monitoring | Sentry | Server/edge/client error capture, disabled without a DSN |
-| Testing | Vitest + PGlite | 111 tests; embedded WASM Postgres runs the real migrations — RLS tested with zero Docker/cloud deps |
+| Testing | Vitest + PGlite | 132 tests; embedded WASM Postgres runs the real migrations — RLS tested with zero Docker/cloud deps |
 | Hosting | Vercel + Supabase Sydney | Auto-deploy from `main`; cron jobs for maintenance + connector sync |
 
 ---
@@ -157,9 +160,9 @@ residency (Supabase Sydney).
 - **Swappable seams** — the embedder is one function; the models are env vars;
   connectors implement one small adapter interface. Each can be upgraded
   without touching the rest.
-- **Cost discipline** — every Claude call is metered per org (`usage_events`);
-  at the monthly cap, Ask returns 429 and ingest pauses. A public trial can't
-  run away with the bill.
+- **Cost discipline** — every LLM call is metered per org (`usage_events`) with
+  per-provider pricing rolled up to USD; at the monthly token or cost cap, Ask
+  returns 429 and ingest pauses. A public trial can't run away with the bill.
 - **Graceful degradation** — without email, Sentry, cron, or connector keys,
   the app still runs; each capability simply switches off with a clear hint
   instead of crashing.
@@ -170,8 +173,8 @@ residency (Supabase Sydney).
 
 **Shipped:** auth/orgs/invites · nodes/wikilinks/versions · ingest + review ·
 cited Ask · graph · promotions · teams · members · maintenance agents +
-scheduling · usage caps · Slack/Gmail/Telegram/WhatsApp connectors · export ·
-Sentry · live deployment.
+scheduling · usage + cost caps · swappable LLM providers (Claude/Kimi/GLM) ·
+Slack/Gmail/Telegram/WhatsApp connectors · export · Sentry · live deployment.
 
 **Next:** per-org **MCP server** (query the brain from AI assistants) · neural
 embedding upgrade for retrieval quality · onboarding wizard · team-lead

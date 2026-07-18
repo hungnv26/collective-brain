@@ -2,7 +2,15 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { getMyOrgs, getVisibleSpaces } from "@/lib/data/session";
 import { createClient } from "@/lib/supabase/server";
-import { monthlyTokenCap, totalTokens, usageThisMonth } from "@/lib/usage/meter";
+import {
+  monthlyCostCap,
+  monthlyTokenCap,
+  totalCost,
+  totalTokens,
+  usageThisMonth,
+  type UsageRow,
+} from "@/lib/usage/meter";
+import { providerLabel, type ProviderId } from "@/lib/ai/provider";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +28,10 @@ export default async function DashboardPage() {
   const usedTokens = totalTokens(usageRows);
   const cap = monthlyTokenCap();
   const usedPct = Math.min(100, Math.round((usedTokens / cap) * 100));
+  const usedCost = totalCost(usageRows);
+  const costCap = monthlyCostCap();
+  const rows = usageRows as UsageRow[];
+  const byProvider = aggregateByProvider(rows);
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
@@ -47,6 +59,11 @@ export default async function DashboardPage() {
           <p className="text-sm tabular-nums">
             {usedTokens.toLocaleString()}{" "}
             <span className="text-muted">/ {cap.toLocaleString()} tokens</span>
+            <span className="ml-2 text-muted">·</span>{" "}
+            <span title="Estimated spend across all providers">
+              ${usedCost.toFixed(2)}
+              {costCap > 0 && <span className="text-muted"> / ${costCap.toLocaleString()}</span>}
+            </span>
           </p>
         </div>
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-panel">
@@ -55,6 +72,29 @@ export default async function DashboardPage() {
             style={{ width: `${usedPct}%` }}
           />
         </div>
+
+        {byProvider.length > 0 && (
+          <table className="mt-4 w-full text-xs">
+            <thead>
+              <tr className="text-left text-muted">
+                <th className="pb-1 font-medium">Provider</th>
+                <th className="pb-1 text-right font-medium">Calls</th>
+                <th className="pb-1 text-right font-medium">Tokens</th>
+                <th className="pb-1 text-right font-medium">Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {byProvider.map((p) => (
+                <tr key={p.provider} className="border-t border-border">
+                  <td className="py-1">{providerLabel(p.provider as ProviderId)}</td>
+                  <td className="py-1 text-right tabular-nums">{p.calls.toLocaleString()}</td>
+                  <td className="py-1 text-right tabular-nums">{p.tokens.toLocaleString()}</td>
+                  <td className="py-1 text-right tabular-nums">${p.cost.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {(nodeCount ?? 0) === 0 ? (
@@ -86,6 +126,27 @@ export default async function DashboardPage() {
       )}
     </div>
   );
+}
+
+interface ProviderTotals {
+  provider: string;
+  calls: number;
+  tokens: number;
+  cost: number;
+}
+
+/** Collapse the kind×provider×model rollup into per-provider totals, costliest first. */
+function aggregateByProvider(rows: UsageRow[]): ProviderTotals[] {
+  const map = new Map<string, ProviderTotals>();
+  for (const r of rows) {
+    const key = r.provider || "unknown";
+    const acc = map.get(key) ?? { provider: key, calls: 0, tokens: 0, cost: 0 };
+    acc.calls += Number(r.calls);
+    acc.tokens += Number(r.input_tokens) + Number(r.output_tokens);
+    acc.cost += Number(r.cost_usd);
+    map.set(key, acc);
+  }
+  return [...map.values()].sort((a, b) => b.cost - a.cost);
 }
 
 function Stat({ label, value }: { label: string; value: number }) {

@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { costUsd } from "./pricing";
 
 export interface TokenUsage {
+  /** Provider id that served the call ('anthropic' | 'kimi' | 'glm'). */
+  provider: string;
   model: string;
   inputTokens: number;
   outputTokens: number;
@@ -10,10 +13,12 @@ export type UsageKind = "ask" | "distill";
 
 export interface UsageRow {
   kind: string;
+  provider: string;
   model: string;
   calls: number;
   input_tokens: number;
   output_tokens: number;
+  cost_usd: number;
 }
 
 /** Start of the current UTC month — the window for month-to-date rollups + caps. */
@@ -39,6 +44,22 @@ export function totalTokens(rows: UsageRow[]): number {
   return rows.reduce((s, r) => s + Number(r.input_tokens) + Number(r.output_tokens), 0);
 }
 
+/** Total spend (USD) across a set of summary rows. */
+export function totalCost(rows: UsageRow[]): number {
+  return rows.reduce((s, r) => s + Number(r.cost_usd), 0);
+}
+
+/** Per-org monthly cost cap (USD). Set CB_MONTHLY_COST_CAP_USD to enable; 0/unset = off. */
+export function monthlyCostCap(): number {
+  const v = Number(process.env.CB_MONTHLY_COST_CAP_USD);
+  return Number.isFinite(v) && v > 0 ? v : 0;
+}
+
+/** Pure: has this org reached its monthly cost cap? Always false when no cap is set. */
+export function overCostCap(usedUsd: number, cap = monthlyCostCap()): boolean {
+  return cap > 0 && usedUsd >= cap;
+}
+
 /**
  * Append a usage event. Best-effort: metering must never break the feature it
  * measures, so failures are swallowed.
@@ -52,9 +73,11 @@ export async function recordUsage(
       org_id: e.orgId,
       user_id: e.userId ?? null,
       kind: e.kind,
+      provider: e.usage.provider,
       model: e.usage.model,
       input_tokens: e.usage.inputTokens,
       output_tokens: e.usage.outputTokens,
+      cost_usd: costUsd(e.usage.model, e.usage.inputTokens, e.usage.outputTokens) ?? 0,
     });
   } catch {
     /* metering is best-effort */
@@ -70,4 +93,9 @@ export async function usageThisMonth(supabase: SupabaseClient, orgId: string): P
 /** Month-to-date total tokens for an org — the number the cap is checked against. */
 export async function monthToDateTokens(supabase: SupabaseClient, orgId: string): Promise<number> {
   return totalTokens(await usageThisMonth(supabase, orgId));
+}
+
+/** Month-to-date spend (USD) for an org — the number the cost cap is checked against. */
+export async function monthToDateCost(supabase: SupabaseClient, orgId: string): Promise<number> {
+  return totalCost(await usageThisMonth(supabase, orgId));
 }
