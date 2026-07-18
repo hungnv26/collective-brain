@@ -14,6 +14,30 @@ export type CreateOrgInput = z.infer<typeof createOrgSchema>;
 
 export const membershipRole = z.enum(["owner", "admin", "lead", "member", "viewer"]);
 
+// Empty strings from the settings form mean "use the platform default" → null.
+const emptyToNull = z
+  .string()
+  .trim()
+  .max(120)
+  .transform((s) => (s === "" ? null : s))
+  .nullable()
+  .optional();
+
+export const llmProvider = z.enum(["anthropic", "kimi", "glm"]);
+
+export const llmSettingsSchema = z.object({
+  provider: llmProvider.nullable().optional(),
+  distillModel: emptyToNull,
+  answerModel: emptyToNull,
+});
+export type LlmSettingsInput = z.infer<typeof llmSettingsSchema>;
+
+export const llmTestSchema = z.object({
+  provider: llmProvider,
+  distillModel: z.string().trim().min(1).max(120),
+  answerModel: z.string().trim().min(1).max(120),
+});
+
 export const createInviteSchema = z.object({
   orgId: z.string().uuid(),
   email: z.string().trim().toLowerCase().email(),
