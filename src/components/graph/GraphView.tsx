@@ -122,13 +122,16 @@ export function GraphView({ data }: { data: GraphData }) {
       const nodesDs = new DataSet(
         data.nodes.map((n) => ({
           id: n.id,
-          label: n.title,
+          // Truncate long titles so labels don't overlap; full title on hover.
+          label: n.title.length > 26 ? n.title.slice(0, 25) + "…" : n.title,
+          title: n.title,
           color: {
             background: colorFor(n.type),
             border: colorFor(n.type),
             highlight: { background: "#ffffff", border: colorFor(n.type) },
           },
-          value: (degree.get(n.id) ?? 0) + 1,
+          // sqrt dampens the size gap so hubs don't balloon over leaf nodes.
+          value: Math.sqrt((degree.get(n.id) ?? 0) + 1),
           shape: "dot",
         })),
       );
@@ -148,8 +151,10 @@ export function GraphView({ data }: { data: GraphData }) {
         { nodes: nodesDs, edges: edgesDs },
         {
           nodes: {
-            scaling: { min: 6, max: 26, label: { enabled: true, min: 10, max: 22 } },
-            font: { color: "#a1a1aa", size: 12, face: "Inter, system-ui, sans-serif" },
+            // Gentler size range, and fixed (un-scaled) labels so hubs don't get
+            // giant text — that was the main source of visual clutter.
+            scaling: { min: 8, max: 18, label: { enabled: false } },
+            font: { color: "#a1a1aa", size: 11, face: "Inter, system-ui, sans-serif" },
             borderWidth: 1.5,
           },
           edges: {
@@ -157,9 +162,17 @@ export function GraphView({ data }: { data: GraphData }) {
             width: 0.6,
           },
           physics: {
+            // More repulsion + longer springs + overlap avoidance spread nodes
+            // out so labels stop colliding.
             solver: "forceAtlas2Based",
-            forceAtlas2Based: { gravitationalConstant: -45, springLength: 90, springConstant: 0.05 },
-            stabilization: { iterations: 180 },
+            forceAtlas2Based: {
+              gravitationalConstant: -70,
+              centralGravity: 0.015,
+              springLength: 140,
+              springConstant: 0.04,
+              avoidOverlap: 0.7,
+            },
+            stabilization: { iterations: 250 },
           },
           interaction: { hover: true, tooltipDelay: 120, navigationButtons: false },
         },
