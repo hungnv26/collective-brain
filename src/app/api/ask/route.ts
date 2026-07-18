@@ -6,7 +6,16 @@ import { getMyOrgs } from "@/lib/data/session";
 import { retrieve } from "@/lib/retrieval/retrieve";
 import { answerStream, citedSources, isAnswererConfigured } from "@/lib/ask/answer";
 import { askSchema } from "@/lib/validation/schemas";
-import { monthToDateTokens, monthlyTokenCap, overCap, recordUsage } from "@/lib/usage/meter";
+import {
+  monthlyCostCap,
+  monthlyTokenCap,
+  overCap,
+  overCostCap,
+  recordUsage,
+  totalCost,
+  totalTokens,
+  usageThisMonth,
+} from "@/lib/usage/meter";
 import { getOrgLlmOverride } from "@/lib/data/org-settings";
 
 export const maxDuration = 60;
@@ -45,10 +54,17 @@ export async function POST(request: Request) {
     );
   }
 
-  // Enforce the monthly token cap before spending on an answer.
-  if (overCap(await monthToDateTokens(supabase, org.id))) {
+  // Enforce the monthly token + cost caps before spending on an answer.
+  const usage = await usageThisMonth(supabase, org.id);
+  if (overCap(totalTokens(usage))) {
     return NextResponse.json(
       { error: `Monthly usage cap reached (${monthlyTokenCap().toLocaleString()} tokens).` },
+      { status: 429 },
+    );
+  }
+  if (overCostCap(totalCost(usage))) {
+    return NextResponse.json(
+      { error: `Monthly cost cap reached ($${monthlyCostCap().toLocaleString()}).` },
       { status: 429 },
     );
   }
