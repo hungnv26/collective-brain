@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { distill } from "@/lib/ai/distill";
+import { getOrgLlmOverride } from "@/lib/data/org-settings";
 import { embed, fromPgVector } from "@/lib/ai/embed";
 import { extractText, type SourceKind } from "./extract";
 import { findDuplicates, type ExistingEmbedding } from "./dedupe";
@@ -70,7 +71,7 @@ export async function runIngest(
       .update({ status: "distilling", source_text: text.slice(0, 100_000) })
       .eq("id", jobId);
 
-    const { nodes: proposed, usage } = await distill(text);
+    const { nodes: proposed, usage } = await distill(text, await getOrgLlmOverride(supabase, orgId));
     await recordUsage(supabase, { orgId, kind: "distill", usage });
 
     // Existing node embeddings in this org, for dedupe.

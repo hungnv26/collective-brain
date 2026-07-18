@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   if (unavailable) return unavailable;
   if (!isDistillerConfigured()) {
     return NextResponse.json(
-      { error: "Ingest needs ANTHROPIC_API_KEY set to call Claude." },
+      { error: "Ingest needs an LLM provider configured (missing API key)." },
       { status: 503 },
     );
   }

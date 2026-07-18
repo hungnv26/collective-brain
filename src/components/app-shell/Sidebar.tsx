@@ -14,6 +14,7 @@ const NAV: { label: string; icon: string; href?: string }[] = [
   { label: "Maintenance", icon: "⟳", href: "/maintenance" },
   { label: "Teams", icon: "⧉", href: "/teams" },
   { label: "Members", icon: "◎", href: "/members" },
+  { label: "Settings", icon: "⚙", href: "/settings" },
 ];
 
 export function Sidebar({

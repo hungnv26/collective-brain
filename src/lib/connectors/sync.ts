@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { CONNECTORS } from "./registry";
 import type { NormalizedItem, Provider, Secrets } from "./types";
 import { distill, isDistillerConfigured } from "@/lib/ai/distill";
+import { getOrgLlmOverride } from "@/lib/data/org-settings";
 import { recordUsage } from "@/lib/usage/meter";
 
 export interface Connection {
@@ -99,7 +100,7 @@ async function ingestItems(
   conn: Connection,
   items: NormalizedItem[],
 ): Promise<number> {
-  if (!isDistillerConfigured()) throw new Error("ANTHROPIC_API_KEY is not set");
+  if (!isDistillerConfigured()) throw new Error("No LLM provider configured (missing API key)");
 
   const text = items.map((i) => `${i.author ?? "unknown"} (${i.timestamp}): ${i.text}`).join("\n\n");
 
@@ -118,7 +119,7 @@ async function ingestItems(
   if (!job) return 0;
   const jobId = (job as { id: string }).id;
 
-  const { nodes, usage } = await distill(text);
+  const { nodes, usage } = await distill(text, await getOrgLlmOverride(supabase, conn.org_id));
   await recordUsage(supabase, { orgId: conn.org_id, kind: "distill", usage });
 
   if (nodes.length > 0) {

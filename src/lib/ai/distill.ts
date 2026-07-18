@@ -1,6 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NODE_TYPES } from "@/lib/types";
 import type { TokenUsage } from "@/lib/usage/meter";
+import { getProvider, resolveLlmConfig, type OrgLlmOverride } from "@/lib/ai/provider";
 
 export interface ProposedNode {
   title: string;
@@ -28,67 +28,55 @@ Rules:
 
 Return the nodes via the propose_nodes tool.`;
 
-const PROPOSE_NODES_TOOL: Anthropic.Tool = {
-  name: "propose_nodes",
-  description: "Return the atomic knowledge nodes distilled from the source material.",
-  // strict guarantees the input validates exactly against this schema.
-  strict: true,
-  input_schema: {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      nodes: {
-        type: "array",
-        items: {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            title: { type: "string" },
-            type: { type: "string", enum: [...NODE_TYPES] },
-            confidence: { type: "string", enum: ["low", "medium", "high"] },
-            body_md: { type: "string" },
-          },
-          required: ["title", "type", "confidence", "body_md"],
+// JSON Schema for the propose_nodes tool input (the structured payload we want back).
+const PROPOSE_NODES_SCHEMA: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    nodes: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          title: { type: "string" },
+          type: { type: "string", enum: [...NODE_TYPES] },
+          confidence: { type: "string", enum: ["low", "medium", "high"] },
+          body_md: { type: "string" },
         },
+        required: ["title", "type", "confidence", "body_md"],
       },
     },
-    required: ["nodes"],
   },
+  required: ["nodes"],
 };
 
-export function isDistillerConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+/** Is the configured distillation provider ready (has an API key)? */
+export function isDistillerConfigured(override?: OrgLlmOverride | null): boolean {
+  return getProvider(resolveLlmConfig(override).provider).isConfigured();
 }
 
-/** Distill raw text into proposed nodes via Claude (forced structured tool call). */
-export async function distill(sourceText: string): Promise<DistillResult> {
-  if (!isDistillerConfigured()) throw new Error("ANTHROPIC_API_KEY is not set");
-  const client = new Anthropic();
-  const model = process.env.CB_DISTILL_MODEL || "claude-opus-4-8";
+/** Distill raw text into proposed nodes via a forced structured tool call. */
+export async function distill(sourceText: string, override?: OrgLlmOverride | null): Promise<DistillResult> {
+  const cfg = resolveLlmConfig(override);
+  const provider = getProvider(cfg.provider);
+  if (!provider.isConfigured()) throw new Error(`${provider.label} is not configured (missing API key)`);
 
-  const res = await client.messages.create({
-    model,
-    max_tokens: 16000,
+  const res = await provider.structured<{ nodes?: ProposedNode[] }>({
+    model: cfg.distillModel,
     system: SYSTEM,
-    tools: [PROPOSE_NODES_TOOL],
-    tool_choice: { type: "tool", name: "propose_nodes" },
-    messages: [{ role: "user", content: `Source material:\n\n${sourceText}` }],
+    toolName: "propose_nodes",
+    toolDescription: "Return the atomic knowledge nodes distilled from the source material.",
+    inputSchema: PROPOSE_NODES_SCHEMA,
+    userText: `Source material:\n\n${sourceText}`,
+    maxTokens: 16000,
   });
 
-  if (res.stop_reason === "refusal") {
-    throw new Error("The model declined to process this source material.");
-  }
-  const block = res.content.find(
-    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "propose_nodes",
-  );
-  if (!block) throw new Error("Distiller returned no structured output.");
-  const nodes = (block.input as { nodes?: ProposedNode[] }).nodes ?? [];
+  if (res.refused) throw new Error("The model declined to process this source material.");
+  if (!res.data) throw new Error("Distiller returned no structured output.");
+  const nodes = res.data.nodes ?? [];
   return {
     nodes: nodes.filter((n) => n.title?.trim() && n.body_md !== undefined),
-    usage: {
-      model,
-      inputTokens: res.usage.input_tokens,
-      outputTokens: res.usage.output_tokens,
-    },
+    usage: res.usage,
   };
 }
